@@ -18,7 +18,7 @@ final class DashboardWindowController: NSObject, ObservableObject, NSWindowDeleg
             backing: .buffered,
             defer: false
         )
-        newWindow.title = "Dashboard — Project Pulse"
+        newWindow.title = "Dashboard — Veira"
         newWindow.center()
         newWindow.contentView = NSHostingView(
             rootView: DashboardView().environmentObject(appState)

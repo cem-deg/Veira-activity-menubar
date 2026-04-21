@@ -4,19 +4,33 @@ enum SessionState {
     case idle
     case active
     case paused
+    case pausedDueToInactivity
 
     var statusLabel: String {
         switch self {
-        case .idle:   return "No Active Session"
-        case .active: return "Session Active"
-        case .paused: return "Session Paused"
+        case .idle:                  return "No Active Session"
+        case .active:                return "Session Active"
+        case .paused:                return "Session Paused"
+        case .pausedDueToInactivity: return "Paused — Inactivity"
         }
     }
 }
 
 final class AppState: ObservableObject {
     @Published private(set) var sessionState: SessionState = .idle
-    @Published var hasCompletedOnboarding: Bool = false
+    @Published var hasCompletedOnboarding: Bool = {
+        let defaults = UserDefaults.standard
+        // Read from the new Veira key if it has been written before.
+        if defaults.object(forKey: "com.veira.hasCompletedOnboarding") != nil {
+            return defaults.bool(forKey: "com.veira.hasCompletedOnboarding")
+        }
+        // One-time migration: promote the legacy ProjectPulse key.
+        if defaults.bool(forKey: "com.projectpulse.hasCompletedOnboarding") {
+            defaults.set(true, forKey: "com.veira.hasCompletedOnboarding")
+            return true
+        }
+        return false
+    }()
 
     private let monitor = ActiveAppMonitor()
     private let buffer = ActivityEventBuffer()
@@ -30,18 +44,27 @@ final class AppState: ObservableObject {
     private var activeRunStartedAt: Date?
     private var accumulatedSessionDuration: TimeInterval = 0
 
+    // Open segment overlay — mirrors the builder's in-flight segment for live display
+    private var openSegmentAppName: String?
+    private var openSegmentBundleId: String?
+    private var openSegmentStartTime: Date?
+
     @Published private(set) var liveClockTick: Date = Date()
     private var displayTimer: Timer?
 
-    @Published private var workDays: [WorkDayRecord] = []
+    @Published private var workDays: [WorkDayRecord] = SessionStore.load()
 
     init() {
         monitor.onEvent = { [weak self] event in
             self?.buffer.append(event)
             self?.segmentBuilder.handle(event)
+            self?.openSegmentAppName = event.appName
+            self?.openSegmentBundleId = event.bundleIdentifier
+            self?.openSegmentStartTime = event.timestamp
         }
         idleMonitor.onIdleStarted = { [weak self] lastActivityAt in self?.idlePause(lastActivityAt: lastActivityAt) }
-        idleMonitor.onIdleEnded   = { [weak self] in self?.idleResume() }
+        idleMonitor.onIdleEnded   = { [weak self] in self?.handleIdleEnded() }
+        ActivityNotifier.requestPermission()
     }
 
     // MARK: - Read-only surfaces
@@ -104,6 +127,44 @@ final class AppState: ObservableObject {
             .sorted { $0.totalDuration > $1.totalDuration }
     }
 
+    var currentSessionAppTotals: [AppUsageTotal] {
+        guard sessionState != .idle else { return [] }
+
+        var accumulated: [String: (appName: String, duration: TimeInterval)] = [:]
+
+        for segment in segmentBuilder.closedSegments {
+            guard let duration = segment.duration else { continue }
+            if accumulated[segment.bundleIdentifier] != nil {
+                accumulated[segment.bundleIdentifier]!.duration += duration
+            } else {
+                accumulated[segment.bundleIdentifier] = (segment.appName, duration)
+            }
+        }
+
+        if sessionState == .active,
+           let appName = openSegmentAppName,
+           let bundleId = openSegmentBundleId,
+           let startTime = openSegmentStartTime {
+            let elapsed = max(0, liveClockTick.timeIntervalSince(startTime))
+            if accumulated[bundleId] != nil {
+                accumulated[bundleId]!.duration += elapsed
+            } else {
+                accumulated[bundleId] = (appName, elapsed)
+            }
+        }
+
+        return accumulated
+            .map { AppUsageTotal(appName: $0.value.appName, bundleIdentifier: $0.key, totalDuration: $0.value.duration) }
+            .sorted { $0.totalDuration > $1.totalDuration }
+    }
+
+    // MARK: - Onboarding
+
+    func markOnboardingComplete() {
+        hasCompletedOnboarding = true
+        UserDefaults.standard.set(true, forKey: "com.veira.hasCompletedOnboarding")
+    }
+
     // MARK: - Session control
 
     func startSession() {
@@ -133,7 +194,7 @@ final class AppState: ObservableObject {
     }
 
     func resumeSession() {
-        guard sessionState == .paused else { return }
+        guard sessionState == .paused || sessionState == .pausedDueToInactivity else { return }
         activeRunStartedAt = Date()
         sessionState = .active
         monitor.start()
@@ -155,11 +216,11 @@ final class AppState: ObservableObject {
             monitor.stop()
             segmentBuilder.closeCurrentSegment(at: now)
             stopDisplayTimer()
-            idleMonitor.stop()
-        case .paused:
+        case .paused, .pausedDueToInactivity:
             break
         }
 
+        idleMonitor.stop()
         finalizeSession(endedAt: now)
         buffer.clear()
         accumulatedSessionDuration = 0
@@ -176,13 +237,14 @@ final class AppState: ObservableObject {
         stopDisplayTimer()
         segmentBuilder.closeCurrentSegment(at: closeTime)
         monitor.stop()
+        sessionState = .pausedDueToInactivity
+        // idleMonitor keeps running to detect user return for the notification
     }
 
-    private func idleResume() {
-        guard sessionState == .active, activeRunStartedAt == nil else { return }
-        activeRunStartedAt = Date()
-        startDisplayTimer()
-        monitor.start()
+    private func handleIdleEnded() {
+        guard sessionState == .pausedDueToInactivity else { return }
+        ActivityNotifier.notifyInactivityPause()
+        idleMonitor.stop()
     }
 
     private func startDisplayTimer() {
@@ -218,5 +280,6 @@ final class AppState: ObservableObject {
         }
 
         sessionStartedAt = nil
+        SessionStore.save(workDays)
     }
 }

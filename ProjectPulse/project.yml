@@ -23,11 +23,14 @@ targets:
       - path: Domain
       - path: Infrastructure
       - path: Shared
+      - path: Assets.xcassets
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.projectpulse.app
+        PRODUCT_BUNDLE_IDENTIFIER: com.veira.app
+        PRODUCT_NAME: Veira
         INFOPLIST_FILE: App/Info.plist
         CODE_SIGN_STYLE: Automatic
         ENABLE_HARDENED_RUNTIME: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     scheme:
       testTargets: []

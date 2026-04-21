@@ -1,6 +1,6 @@
 import Foundation
 
-struct TrackedSession {
+struct TrackedSession: Codable {
     let id: UUID
     let startedAt: Date
     let endedAt: Date

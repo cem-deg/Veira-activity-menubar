@@ -21,6 +21,9 @@ struct DashboardView: View {
 
 private struct TodaySummarySection: View {
     @EnvironmentObject private var appState: AppState
+    @State private var showAllSessions = false
+
+    private static let defaultSessionLimit = 2
 
     private var sessions: [TrackedSession] {
         appState.todayRecord?.sessions ?? []
@@ -54,12 +57,29 @@ private struct TodaySummarySection: View {
     }
 
     private var summaryStats: some View {
-        HStack(spacing: 32) {
-            StatCell(label: "Sessions", value: "\(sessions.count)")
-            StatCell(label: "Total Time", value: DurationTextFormatter.string(from: appState.todayTotalDuration))
+        HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(DurationTextFormatter.string(from: appState.todayTotalDuration))
+                    .font(.title)
+                    .fontWeight(.semibold)
+                    .monospacedDigit()
+                Text("Total Time")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("\(sessions.count)")
+                    .font(.title3)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.secondary)
+                Text(sessions.count == 1 ? "session" : "sessions")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
         }
         .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: 8)
                 .fill(.secondary.opacity(0.12))
@@ -67,9 +87,27 @@ private struct TodaySummarySection: View {
     }
 
     private var sessionList: some View {
-        VStack(spacing: 6) {
-            ForEach(sessions, id: \.id) { session in
+        let limit = Self.defaultSessionLimit
+        let needsToggle = sessions.count > limit
+        let visible = needsToggle && !showAllSessions ? Array(sessions.prefix(limit)) : sessions
+
+        return VStack(spacing: 6) {
+            ForEach(visible, id: \.id) { session in
                 SessionRow(session: session)
+            }
+            if needsToggle {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        showAllSessions.toggle()
+                    }
+                } label: {
+                    Text(showAllSessions ? "Show less" : "Show all sessions")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 2)
             }
         }
     }
@@ -102,11 +140,12 @@ private struct SessionRow: View {
                 }
             } label: {
                 HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("\(start) – \(end)")
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(DurationTextFormatter.string(from: duration))
                             .font(.subheadline)
+                            .fontWeight(.medium)
                         HStack(spacing: 8) {
-                            Text(DurationTextFormatter.string(from: duration))
+                            Text("\(start) – \(end)")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             if !apps.isEmpty {
@@ -135,7 +174,8 @@ private struct SessionRow: View {
             if isExpanded && !breakdown.isEmpty {
                 Divider()
                     .padding(.horizontal, 12)
-                VStack(spacing: 4) {
+                    .opacity(0.6)
+                VStack(spacing: 6) {
                     ForEach(breakdown, id: \.appName) { entry in
                         HStack {
                             Text(entry.appName)
@@ -144,36 +184,20 @@ private struct SessionRow: View {
                             Spacer()
                             Text(DurationTextFormatter.string(from: entry.duration))
                                 .font(.caption)
-                                .foregroundStyle(.tertiary)
+                                .fontWeight(.medium)
+                                .monospacedDigit()
+                                .foregroundStyle(.secondary)
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, 20)
                     }
                 }
-                .padding(.vertical, 8)
+                .padding(.vertical, 10)
             }
         }
         .background(
             RoundedRectangle(cornerRadius: 6)
                 .fill(.secondary.opacity(0.08))
         )
-    }
-}
-
-// MARK: - Stat Cell
-
-private struct StatCell: View {
-    let label: String
-    let value: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(value)
-                .font(.title2)
-                .fontWeight(.semibold)
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
     }
 }
 
@@ -255,6 +279,8 @@ private struct AppTotalRow: View {
             Spacer()
             Text(DurationTextFormatter.string(from: total.totalDuration))
                 .font(.subheadline)
+                .fontWeight(.medium)
+                .monospacedDigit()
                 .foregroundStyle(.secondary)
         }
         .padding(12)
@@ -306,8 +332,8 @@ private struct WeekDayRow: View {
                     .foregroundStyle(.secondary)
                 Text(DurationTextFormatter.string(from: summary.totalDuration))
                     .font(.subheadline)
+                    .fontWeight(.medium)
                     .monospacedDigit()
-                    .foregroundStyle(.secondary)
                     .frame(minWidth: 70, alignment: .trailing)
             } else {
                 Text("—")
@@ -328,9 +354,10 @@ private struct WeekDayRow: View {
 private extension SessionState {
     var indicatorColor: Color {
         switch self {
-        case .idle:   return Color.secondary
-        case .active: return Color.green
-        case .paused: return Color.orange
+        case .idle:                  return Color.secondary
+        case .active:                return Color.green
+        case .paused:                return Color.orange
+        case .pausedDueToInactivity: return Color.yellow
         }
     }
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-struct ActivitySegment {
+struct ActivitySegment: Codable {
     let appName: String
     let bundleIdentifier: String
     let startTime: Date

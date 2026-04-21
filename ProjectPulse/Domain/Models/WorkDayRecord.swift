@@ -1,6 +1,6 @@
 import Foundation
 
-struct WorkDayRecord {
+struct WorkDayRecord: Codable {
     let date: Date
     var sessions: [TrackedSession]
 }

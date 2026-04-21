@@ -7,7 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0C316CC7C8A7632582A7DBD0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BEC20D993CB3D3C84E59CA3A /* Assets.xcassets */; };
 		0FAADFB4F55AFF465FF51B1A /* DashboardWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFF7771C55BC5F5135D99161 /* DashboardWindowController.swift */; };
+		3ECA4CF886BC3A30D29386FD /* ActivityNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1799D75EA8FD8AA51E9B0F56 /* ActivityNotifier.swift */; };
 		4AF56999272F8744CEA5F599 /* AppUsageTotal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25DEC23F470E23EC334B4DCA /* AppUsageTotal.swift */; };
 		4BEC181F6289095637E5DEAC /* DaySummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFFFBD939A04D01B35073DAD /* DaySummary.swift */; };
 		5CF8A98567B28D1322677C59 /* TrackedSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 618A2AE0BC64B37BA92EC7AF /* TrackedSession.swift */; };
@@ -25,11 +27,13 @@
 		E62A68463094FBD46C43B928 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C78BF7B8EB01C95EC77D478B /* DashboardView.swift */; };
 		EC4B9EBA91A2FCE46EE672E6 /* ActivityEventBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B3CACB35C98D22932B6757C /* ActivityEventBuffer.swift */; };
 		F23AA924F25F73462EE1A02E /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48CC8ED89EDE4C89A9A3F3F5 /* OnboardingView.swift */; };
+		FDF163A6374ED24DB293CD72 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8730479418AC6808CF1BE5A4 /* SessionStore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		05B2097738385308EFF69005 /* ProjectPulse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ProjectPulse.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		09F639D0681AD2B520367EB4 /* ActivityEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityEvent.swift; sourceTree = "<group>"; };
+		1799D75EA8FD8AA51E9B0F56 /* ActivityNotifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityNotifier.swift; sourceTree = "<group>"; };
 		25DEC23F470E23EC334B4DCA /* AppUsageTotal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUsageTotal.swift; sourceTree = "<group>"; };
 		2B3CACB35C98D22932B6757C /* ActivityEventBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityEventBuffer.swift; sourceTree = "<group>"; };
 		3A961CDB991367A8057AC8FA /* WorkDayRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkDayRecord.swift; sourceTree = "<group>"; };
@@ -39,8 +43,10 @@
 		62AC3C28256DD46C8901E7E3 /* DurationTextFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DurationTextFormatter.swift; sourceTree = "<group>"; };
 		6E30CEE6081BAF667A155EFD /* IdleMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdleMonitor.swift; sourceTree = "<group>"; };
 		7378423B970479AB052611E1 /* ActiveAppMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveAppMonitor.swift; sourceTree = "<group>"; };
+		8730479418AC6808CF1BE5A4 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
 		87D68766BC26C4C27242CCC6 /* ProjectPulseApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectPulseApp.swift; sourceTree = "<group>"; };
 		B6335B476F54AB1238AB6F60 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		BEC20D993CB3D3C84E59CA3A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BEC355DE02B5213227D5E5F7 /* ActivitySegmentBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivitySegmentBuilder.swift; sourceTree = "<group>"; };
 		C78BF7B8EB01C95EC77D478B /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		C8512335745D8D2F2FEFC248 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
@@ -53,6 +59,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		0347F7210DBEAC78DC20BC16 /* Notifications */ = {
+			isa = PBXGroup;
+			children = (
+				1799D75EA8FD8AA51E9B0F56 /* ActivityNotifier.swift */,
+			);
+			path = Notifications;
+			sourceTree = "<group>";
+		};
 		34BF79F99889944AFAA8836B /* App */ = {
 			isa = PBXGroup;
 			children = (
@@ -116,6 +130,14 @@
 			path = Domain;
 			sourceTree = "<group>";
 		};
+		8D8473A3D853EE3A4A4C37D6 /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				8730479418AC6808CF1BE5A4 /* SessionStore.swift */,
+			);
+			path = Persistence;
+			sourceTree = "<group>";
+		};
 		A5CCE979DAFEF5D09297E42A = {
 			isa = PBXGroup;
 			children = (
@@ -124,6 +146,7 @@
 				7A3DE4773E19292D365E9B92 /* Features */,
 				AD3480FF77504A5FD08E81BA /* Infrastructure */,
 				81DC492FE4BE2325C572CAC9 /* Shared */,
+				BEC20D993CB3D3C84E59CA3A /* Assets.xcassets */,
 				C7157A14538B891D35DA5390 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -131,6 +154,8 @@
 		AD3480FF77504A5FD08E81BA /* Infrastructure */ = {
 			isa = PBXGroup;
 			children = (
+				0347F7210DBEAC78DC20BC16 /* Notifications */,
+				8D8473A3D853EE3A4A4C37D6 /* Persistence */,
 				DADF456345AB520B5B505B6D /* Tracking */,
 				49063E2250E8FB3A382643FA /* .gitkeep */,
 				EFF7771C55BC5F5135D99161 /* DashboardWindowController.swift */,
@@ -193,6 +218,7 @@
 			buildConfigurationList = EA5A2CD134BF060725908F93 /* Build configuration list for PBXNativeTarget "ProjectPulse" */;
 			buildPhases = (
 				7FCCCE61935C8E45E759E4A8 /* Sources */,
+				5A857D9B0B05BE9E015A91A0 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -238,6 +264,17 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		5A857D9B0B05BE9E015A91A0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0C316CC7C8A7632582A7DBD0 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		7FCCCE61935C8E45E759E4A8 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -246,6 +283,7 @@
 				6DA4771CC2CC17BF14FE5AF3 /* ActiveAppMonitor.swift in Sources */,
 				6EB7A8C4205206308C4ABD14 /* ActivityEvent.swift in Sources */,
 				EC4B9EBA91A2FCE46EE672E6 /* ActivityEventBuffer.swift in Sources */,
+				3ECA4CF886BC3A30D29386FD /* ActivityNotifier.swift in Sources */,
 				6EEE78AA9F3C36D9A450C23E /* ActivitySegment.swift in Sources */,
 				933968A87A0DA86100161EF7 /* ActivitySegmentBuilder.swift in Sources */,
 				A28A690B1100CFD469C0D146 /* AppState.swift in Sources */,
@@ -258,6 +296,7 @@
 				7102A0085A32F950DE67CCA8 /* MenuBarView.swift in Sources */,
 				F23AA924F25F73462EE1A02E /* OnboardingView.swift in Sources */,
 				E5182D70D89E0B89F54399F0 /* ProjectPulseApp.swift in Sources */,
+				FDF163A6374ED24DB293CD72 /* SessionStore.swift in Sources */,
 				691706696F4A3792515AFDA0 /* SettingsView.swift in Sources */,
 				5CF8A98567B28D1322677C59 /* TrackedSession.swift in Sources */,
 				6468F1770C8189667C37AC67 /* WorkDayRecord.swift in Sources */,
@@ -336,7 +375,8 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.projectpulse.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.veira.app;
+				PRODUCT_NAME = Veira;
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -417,7 +457,8 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.projectpulse.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.veira.app;
+				PRODUCT_NAME = Veira;
 				SDKROOT = macosx;
 			};
 			name = Release;

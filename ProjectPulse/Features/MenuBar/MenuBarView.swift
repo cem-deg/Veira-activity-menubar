@@ -9,18 +9,17 @@ struct MenuBarView: View {
             statusHeader
             Divider()
             todaySection
+            sessionAppsSection
             Divider()
             sessionControlSection
             Divider()
-            PanelButton("Open Dashboard") {
-                dashboardController.open(appState: appState)
-            }
-            PanelButton("Quit Project Pulse") {
-                NSApplication.shared.terminate(nil)
-            }
+            actionsSection
         }
-        .frame(width: 240)
+        .padding(.vertical, 4)
+        .frame(width: 260)
     }
+
+    // MARK: - Status
 
     private var statusHeader: some View {
         HStack(spacing: 8) {
@@ -36,31 +35,17 @@ struct MenuBarView: View {
         .padding(.vertical, 10)
     }
 
+    // MARK: - Today
+
     private var todaySection: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(spacing: 3) {
+            SectionLabel("TODAY")
             todayDurationText
-            let topApps = appState.todayAppTotals.prefix(3)
-            if !topApps.isEmpty {
-                Text("Top Apps")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .padding(.top, 2)
-                ForEach(Array(topApps)) { app in
-                    HStack {
-                        Text(app.appName)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Text(DurationTextFormatter.string(from: app.totalDuration))
-                            .font(.caption)
-                            .monospacedDigit()
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-            }
         }
+        .frame(maxWidth: .infinity)
         .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .padding(.top, 12)
+        .padding(.bottom, 10)
     }
 
     @ViewBuilder
@@ -70,40 +55,105 @@ struct MenuBarView: View {
             if let runStart = appState.sessionActiveRunStartedAt {
                 let elapsed = appState.liveClockTick.timeIntervalSince(runStart)
                 let total = appState.todayTotalDuration + appState.sessionAccumulatedDuration + elapsed
-                Text("Today: \(DurationTextFormatter.string(from: total))")
-                    .font(.subheadline)
+                Text(DurationTextFormatter.string(from: total))
+                    .font(.title2)
+                    .fontWeight(.semibold)
                     .monospacedDigit()
             } else {
                 let total = appState.todayTotalDuration + appState.sessionAccumulatedDuration
-                Text("Today: \(DurationTextFormatter.string(from: total))")
-                    .font(.subheadline)
+                Text(DurationTextFormatter.string(from: total))
+                    .font(.title2)
+                    .fontWeight(.semibold)
                     .monospacedDigit()
             }
-        case .paused:
+        case .paused, .pausedDueToInactivity:
             let total = appState.todayTotalDuration + appState.sessionAccumulatedDuration
-            Text("Today: \(DurationTextFormatter.string(from: total))")
-                .font(.subheadline)
+            Text(DurationTextFormatter.string(from: total))
+                .font(.title2)
+                .fontWeight(.semibold)
                 .monospacedDigit()
         case .idle:
             let duration = appState.todayTotalDuration
-            Text("Today: \(duration > 0 ? DurationTextFormatter.string(from: duration) : "No data yet")")
-                .font(.subheadline)
+            Text(duration > 0 ? DurationTextFormatter.string(from: duration) : "No data yet")
+                .font(.title2)
+                .fontWeight(.semibold)
                 .monospacedDigit()
         }
     }
 
+    // MARK: - This Session Apps
+
+    @ViewBuilder
+    private var sessionAppsSection: some View {
+        let sessionApps = appState.currentSessionAppTotals.prefix(3)
+        if !sessionApps.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                SectionLabel("THIS SESSION")
+                ForEach(Array(sessionApps)) { app in
+                    HStack {
+                        Text(app.appName)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                        Spacer()
+                        Text(DurationTextFormatter.string(from: app.totalDuration))
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.top, 4)
+            .padding(.bottom, 10)
+        }
+    }
+
+    // MARK: - Controls
+
     @ViewBuilder
     private var sessionControlSection: some View {
-        switch appState.sessionState {
-        case .idle:
-            PanelButton("Start Session") { appState.startSession() }
-        case .active:
-            PanelButton("Pause Session") { appState.pauseSession() }
-            PanelButton("End Session") { appState.endSession() }
-        case .paused:
-            PanelButton("Resume Session") { appState.resumeSession() }
-            PanelButton("End Session") { appState.endSession() }
+        VStack(spacing: 0) {
+            switch appState.sessionState {
+            case .idle:
+                PanelButton("Start Session") { appState.startSession() }
+            case .active:
+                PanelButton("Pause Session") { appState.pauseSession() }
+                PanelButton("End Session") { appState.endSession() }
+            case .paused, .pausedDueToInactivity:
+                PanelButton("Resume Session") { appState.resumeSession() }
+                PanelButton("End Session") { appState.endSession() }
+            }
         }
+    }
+
+    // MARK: - Actions
+
+    private var actionsSection: some View {
+        VStack(spacing: 0) {
+            PanelButton("Open Dashboard") {
+                dashboardController.open(appState: appState)
+            }
+            PanelButton("Quit Veira") {
+                NSApplication.shared.terminate(nil)
+            }
+        }
+    }
+}
+
+// MARK: - Supporting Views
+
+private struct SectionLabel: View {
+    let text: String
+    init(_ text: String) { self.text = text }
+
+    var body: some View {
+        Text(text)
+            .font(.caption2)
+            .fontWeight(.medium)
+            .foregroundStyle(.tertiary)
+            .kerning(0.4)
     }
 }
 
@@ -128,12 +178,15 @@ private struct PanelButton: View {
     }
 }
 
+// MARK: - SessionState helpers
+
 private extension SessionState {
     var indicatorColor: Color {
         switch self {
-        case .idle:   return Color.secondary
-        case .active: return Color.green
-        case .paused: return Color.orange
+        case .idle:                  return Color.secondary
+        case .active:                return Color.green
+        case .paused:                return Color.orange
+        case .pausedDueToInactivity: return Color.yellow
         }
     }
 }
