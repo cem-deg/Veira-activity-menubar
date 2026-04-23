@@ -543,7 +543,7 @@ private struct WeeklyDetailsView: View {
                         .fill(.secondary.opacity(0.12))
                 )
 
-                WeeklyStackedBarChart(summaries: summaries, recordedDays: appState.recordedDays)
+                WeeklyHeatmapGrid(summaries: summaries, onSelectDay: { selectedDay = $0 })
 
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Daily Breakdown")
@@ -1085,185 +1085,141 @@ private struct DayDonutChart: View {
     }
 }
 
-// MARK: - Weekly Stacked Bar Chart
+// MARK: - Weekly Heatmap Grid
 
-private struct WeeklyStackedBarChart: View {
+private struct WeeklyHeatmapGrid: View {
     let summaries: [DaySummary]
-    let recordedDays: [WorkDayRecord]
+    var onSelectDay: ((Date) -> Void)? = nil
 
-    @State private var hoveredDate: Date? = nil
-    @State private var tooltipLocation: CGPoint = .zero
+    @State private var hoveredSummary: DaySummary? = nil
 
-    private static let topAppLimit = 5
-    private static let palette: [Color] = [
-        .blue.opacity(0.65),
-        .teal.opacity(0.65),
-        .indigo.opacity(0.60),
-        .mint.opacity(0.65),
-        .cyan.opacity(0.60),
-        Color.secondary.opacity(0.32)
-    ]
-
-    private struct StackEntry: Identifiable {
-        let id: String
-        let date: Date
-        let appName: String
-        let duration: TimeInterval
+    private var maxDuration: TimeInterval {
+        summaries.map(\.totalDuration).max() ?? 0
     }
 
-    private var topApps: [String] {
-        var totals: [String: TimeInterval] = [:]
-        let cal = Calendar.current
-        for record in recordedDays where summaries.contains(where: { cal.isDate($0.date, inSameDayAs: record.date) }) {
-            for session in record.sessions {
-                for entry in session.perAppDurations {
-                    totals[entry.appName, default: 0] += entry.duration
-                }
-            }
-        }
-        return totals.sorted { $0.value > $1.value }
-            .prefix(Self.topAppLimit)
-            .map(\.key)
-    }
+    private static let fullDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "EEEE, MMM d"
+        return f
+    }()
 
-    private var entries: [StackEntry] {
-        let top = Set(topApps)
-        let cal = Calendar.current
-        var result: [StackEntry] = []
-
-        for summary in summaries where summary.totalDuration > 0 {
-            guard let record = recordedDays.first(where: { cal.isDate($0.date, inSameDayAs: summary.date) }) else { continue }
-
-            var dayTotals: [String: TimeInterval] = [:]
-            for session in record.sessions {
-                for entry in session.perAppDurations {
-                    dayTotals[entry.appName, default: 0] += entry.duration
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                ForEach(summaries) { summary in
+                    HeatmapTile(
+                        summary: summary,
+                        intensity: maxDuration > 0 ? summary.totalDuration / maxDuration : 0,
+                        isHovered: hoveredSummary?.id == summary.id,
+                        onHover: { active in hoveredSummary = active ? summary : nil },
+                        onTap: onSelectDay.map { handler in { handler(summary.date) } }
+                    )
                 }
             }
 
-            var otherDuration: TimeInterval = 0
-            for (appName, duration) in dayTotals {
-                if top.contains(appName) {
-                    result.append(StackEntry(
-                        id: "\(summary.date.timeIntervalSince1970)-\(appName)",
-                        date: summary.date,
-                        appName: appName,
-                        duration: duration
-                    ))
+            // Inline detail strip — fixed height to prevent layout shift
+            Group {
+                if let hovered = hoveredSummary {
+                    HStack(spacing: 5) {
+                        Text(Self.fullDateFormatter.string(from: hovered.date))
+                            .fontWeight(.medium)
+                        if hovered.totalDuration > 0 {
+                            Text("·").foregroundStyle(.tertiary)
+                            Text(DurationTextFormatter.string(from: hovered.totalDuration))
+                                .monospacedDigit()
+                            Text("·").foregroundStyle(.tertiary)
+                            Text("\(hovered.sessionCount) \(hovered.sessionCount == 1 ? "session" : "sessions")")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("·").foregroundStyle(.tertiary)
+                            Text("No activity").foregroundStyle(.tertiary)
+                        }
+                    }
+                    .font(.caption)
                 } else {
-                    otherDuration += duration
+                    Color.clear
                 }
             }
-            if otherDuration > 0 {
-                result.append(StackEntry(
-                    id: "\(summary.date.timeIntervalSince1970)-other",
-                    date: summary.date,
-                    appName: "Other",
-                    duration: otherDuration
-                ))
-            }
+            .frame(height: 16)
         }
-        return result
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 8).fill(.secondary.opacity(0.06)))
     }
+}
 
-    private var stackDomain: [String] {
-        let present = Set(entries.map(\.appName))
-        var domain = topApps.filter { present.contains($0) }
-        if present.contains("Other") { domain.append("Other") }
-        return domain
-    }
+private struct HeatmapTile: View {
+    let summary: DaySummary
+    let intensity: Double
+    let isHovered: Bool
+    let onHover: (Bool) -> Void
+    var onTap: (() -> Void)? = nil
 
-    private var hasAnyData: Bool {
-        summaries.contains { $0.totalDuration > 0 }
-    }
+    private static let dayFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "EEE"
+        return f
+    }()
 
-    private var hoveredSummary: DaySummary? {
-        guard let hovered = hoveredDate else { return nil }
-        return summaries.first {
-            Calendar.current.isDate($0.date, inSameDayAs: hovered) && $0.totalDuration > 0
-        }
+    private var fillOpacity: Double {
+        guard summary.totalDuration > 0 else { return 0 }
+        return 0.10 + intensity * 0.55
     }
 
     var body: some View {
-        if hasAnyData {
-            ZStack(alignment: .topLeading) {
-                let domain = stackDomain
-                Chart(entries) { entry in
-                    BarMark(
-                        x: .value("Day", entry.date, unit: .day),
-                        y: .value("Hours", entry.duration / 3600)
-                    )
-                    .foregroundStyle(by: .value("App", entry.appName))
-                }
-                .chartForegroundStyleScale(
-                    domain: domain,
-                    range: Array(Self.palette.prefix(domain.count))
-                )
-                .chartLegend(.hidden)
-                .chartXAxis {
-                    AxisMarks(values: .stride(by: .day)) { _ in
-                        AxisValueLabel(format: .dateTime.weekday(.abbreviated))
-                    }
-                }
-                .chartYAxis {
-                    AxisMarks(values: .automatic(desiredCount: 3)) { value in
-                        AxisGridLine()
-                            .foregroundStyle(Color.secondary.opacity(0.15))
-                        AxisValueLabel {
-                            if let h = value.as(Double.self), h > 0 {
-                                Text("\(Int(h))h")
-                                    .font(.caption2)
-                                    .foregroundStyle(Color.secondary)
-                            }
-                        }
-                    }
-                }
-                .chartOverlay { proxy in
-                    GeometryReader { geo in
-                        Rectangle()
-                            .fill(.clear)
-                            .contentShape(Rectangle())
-                            .onContinuousHover { phase in
-                                switch phase {
-                                case .active(let location):
-                                    tooltipLocation = location
-                                    let origin = geo[proxy.plotAreaFrame].origin
-                                    let x = location.x - origin.x
-                                    if let date: Date = proxy.value(atX: x) {
-                                        hoveredDate = date
-                                    }
-                                case .ended:
-                                    hoveredDate = nil
-                                }
-                            }
-                    }
-                }
-                .frame(height: 160)
+        Button {
+            onTap?()
+        } label: {
+            VStack(spacing: 3) {
+                Text(Self.dayFormatter.string(from: summary.date))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
 
-                if let summary = hoveredSummary {
+                Spacer(minLength: 0)
+
+                if summary.totalDuration > 0 {
                     Text(DurationTextFormatter.string(from: summary.totalDuration))
-                        .font(.caption2)
+                        .font(.caption)
                         .fontWeight(.medium)
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 4)
-                        .background(
-                            RoundedRectangle(cornerRadius: 5)
-                                .fill(.regularMaterial)
-                                .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
-                        )
-                        .position(x: tooltipLocation.x + 12, y: tooltipLocation.y - 16)
-                        .allowsHitTesting(false)
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                    Text("\(summary.sessionCount)")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                } else {
+                    Text("—")
+                        .font(.caption2)
+                        .foregroundStyle(Color.secondary.opacity(0.30))
                 }
             }
-        } else {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(.secondary.opacity(0.06))
-                .frame(maxWidth: .infinity, minHeight: 100)
-                .overlay(
-                    Text("No data this week")
-                        .font(.subheadline)
-                        .foregroundStyle(.tertiary)
-                )
+            .padding(.vertical, 10)
+            .padding(.horizontal, 6)
+            .frame(maxWidth: .infinity)
+            .frame(height: 76)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(
+                        summary.totalDuration > 0
+                            ? Color.accentColor.opacity(fillOpacity)
+                            : Color.secondary.opacity(0.07)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(
+                                isHovered && summary.totalDuration > 0
+                                    ? Color.accentColor.opacity(0.50)
+                                    : Color.clear,
+                                lineWidth: 1
+                            )
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+        .onContinuousHover { phase in
+            switch phase {
+            case .active: onHover(true)
+            case .ended: onHover(false)
+            }
         }
     }
 }
