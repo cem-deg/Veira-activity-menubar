@@ -884,6 +884,29 @@ private struct DayDetailsView: View {
                         DayDonutChart(appTotals: appTotals, totalDuration: summary.totalDuration)
                     }
                 }
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Sessions")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+
+                    if sessions.isEmpty {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(.secondary.opacity(0.06))
+                            .frame(maxWidth: .infinity, minHeight: 56)
+                            .overlay(
+                                Text("No sessions for this day")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.tertiary)
+                            )
+                    } else {
+                        VStack(spacing: 6) {
+                            ForEach(sessions.reversed(), id: \.id) { session in
+                                SessionRow(session: session)
+                            }
+                        }
+                    }
+                }
             }
             .padding(32)
         }
