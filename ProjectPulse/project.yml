@@ -14,6 +14,11 @@ settings:
     MARKETING_VERSION: "1.0.0"
     CURRENT_PROJECT_VERSION: "1"
 
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: "2.0.0"
+
 targets:
   ProjectPulse:
     type: application
@@ -26,12 +31,16 @@ targets:
       - path: Infrastructure
       - path: Shared
       - path: Assets.xcassets
+    dependencies:
+      - package: Sparkle
+        product: Sparkle
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.veira.app
         PRODUCT_NAME: Veira
         INFOPLIST_FILE: App/Info.plist
         CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: App/Veira.entitlements
         ENABLE_HARDENED_RUNTIME: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     scheme:

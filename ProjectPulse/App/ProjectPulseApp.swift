@@ -7,6 +7,7 @@ struct ProjectPulseApp: App {
     @StateObject private var appState = AppState()
     @StateObject private var dashboardController = DashboardWindowController()
     @StateObject private var onboardingController = OnboardingWindowController()
+    @StateObject private var updaterService = UpdaterService()
 
     init() {
         UNUserNotificationCenter.current().delegate = NotificationDelegate.shared
@@ -17,6 +18,7 @@ struct ProjectPulseApp: App {
             MenuBarView()
                 .environmentObject(appState)
                 .environmentObject(dashboardController)
+                .environmentObject(updaterService)
                 .task {
                     guard !appState.hasCompletedOnboarding else { return }
                     onboardingController.open(appState: appState)

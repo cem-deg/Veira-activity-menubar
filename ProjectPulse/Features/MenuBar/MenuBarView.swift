@@ -3,6 +3,7 @@ import SwiftUI
 struct MenuBarView: View {
     @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var dashboardController: DashboardWindowController
+    @EnvironmentObject private var updaterService: UpdaterService
 
     var body: some View {
         VStack(spacing: 0) {
@@ -135,6 +136,10 @@ struct MenuBarView: View {
             PanelButton("Open Dashboard") {
                 dashboardController.open(appState: appState)
             }
+            PanelButton("Check for Updates…") {
+                updaterService.checkForUpdates()
+            }
+            .disabled(!updaterService.canCheckForUpdates)
             PanelButton("Quit Veira") {
                 NSApplication.shared.terminate(nil)
             }

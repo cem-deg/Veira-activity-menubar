@@ -28,5 +28,11 @@
 	<true/>
 	<key>NSUserNotificationsUsageDescription</key>
 	<string>Veira uses notifications to let you know when tracking was paused due to inactivity.</string>
+	<key>SUFeedURL</key>
+	<string>https://raw.githubusercontent.com/cem-deg/dev-activity-hub/main/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>3Lnhyhfd/OxOl0kh+mi8XtSVD0IoAi50V8+uaTwgzdc=</string>
+	<key>SUEnableAutomaticChecks</key>
+	<false/>
 </dict>
 </plist>
